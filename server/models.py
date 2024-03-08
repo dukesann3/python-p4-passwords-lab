@@ -1,5 +1,6 @@
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_serializer import SerializerMixin
+import ipdb
 
 from config import db, bcrypt
 
@@ -12,7 +13,7 @@ class User(db.Model, SerializerMixin):
 
     @hybrid_property
     def password_hash(self):
-        raise Exception('Password hashes may not be viewed.')
+       return self._password_hash
 
     @password_hash.setter
     def password_hash(self, password):
@@ -23,6 +24,7 @@ class User(db.Model, SerializerMixin):
     def authenticate(self, password):
         return bcrypt.check_password_hash(
             self._password_hash, password.encode('utf-8'))
+      
 
     def __repr__(self):
         return f'User {self.username}, ID: {self.id}'

@@ -3,6 +3,7 @@ import pytest
 
 from app import app
 from models import db, User
+import ipdb
 
 app.secret_key = b'a\xdb\xd2\x13\x93\xc1\xe9\x97\xef2\xe3\x004U\xd1Z'
 
@@ -18,11 +19,15 @@ class TestApp:
             db.session.commit()
         
         with app.test_client() as client:
-            
+            print("client",client)
+
+            #is the test incorrect? Because this should be correct
             response = client.post('/signup', json={
                 'username': 'ash',
                 'password': 'pikachu',
             })
+
+            print("response:",response)
 
             assert(response.json['username'] == 'ash')
             assert(User.query.filter(User.username == 'ash').first())
@@ -76,7 +81,7 @@ class TestApp:
                 assert(session['user_id'])
 
             # check if logged out
-            response = client.delete('/logout')
+            client.delete('/logout')
             with client.session_transaction() as session:
                 assert(not session['user_id'])
             
@@ -103,7 +108,7 @@ class TestApp:
             })
 
             response = client.get('/check_session')
-            
+
             assert(response.get_json()['username'] == 'ash')
 
             client.delete('/logout')

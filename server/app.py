@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-from flask import request, session
+from flask import request, session, make_response
 from flask_restful import Resource
 
 from config import app, db, api
 from models import User
+import ipdb
 
 class ClearSession(Resource):
 
@@ -19,25 +20,58 @@ class Signup(Resource):
     
     def post(self):
         json = request.get_json()
+
         user = User(
             username=json['username'],
             password_hash=json['password']
         )
+
         db.session.add(user)
         db.session.commit()
-        return user.to_dict(), 201
 
+        #officially logs in user here...
+        session['user_id'] = user.id
+
+        return make_response(user.to_dict(), 200)
+
+    
 class CheckSession(Resource):
-    pass
+    def get(self):
+
+        user_id = session['user_id']
+        user = User.query.filter(User.id == user_id).first()
+
+        if user:
+            return make_response(user.to_dict(), 200)
+        else:
+            return {}, 204
+    
 
 class Login(Resource):
-    pass
+    def post(self):
+        json = request.get_json()
+        username = json["username"]
+        password = json["password"]
 
+        user = User.query.filter(User.username == username).first()
+
+        if user.authenticate(password):
+            session['user_id'] = user.id
+            return make_response(user.to_dict(), 200)
+        else:
+            return {}, 204
+        
 class Logout(Resource):
-    pass
+    def delete(self):
+        session['user_id'] = None
+        return {'message': '204: No Conent'}, 204
+
 
 api.add_resource(ClearSession, '/clear', endpoint='clear')
 api.add_resource(Signup, '/signup', endpoint='signup')
+api.add_resource(Login, '/login', endpoint='login')
+api.add_resource(Logout, '/logout', endpoint='logout')
+api.add_resource(CheckSession, '/check_session')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
